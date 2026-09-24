@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Penskoran Cerdas Cermat</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 20px;
+      background-color: #f0f2f5;
+    }
+    nav {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+    nav button {
+      padding: 10px 25px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background-color: #007bff;
+      color: white;
+      transition: background-color 0.2s;
+    }
+    nav button:hover {
+      background-color: #0056b3;
+    }
+    .page {
+      display: none;
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .active {
+      display: block;
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+    
+    /* Style Halaman Admin */
+    .admin-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+    }
+    .btn-score {
+      padding: 8px 15px;
+      margin: 0 3px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .btn-plus { background-color: #28a745; color: white; }
+    .btn-minus { background-color: #dc3545; color: white; }
+
+    /* Style Halaman Display Real-time */
+    .leaderboard {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .leaderboard-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 24px;
+      background-color: #ffffff;
+      border-left: 6px solid #007bff;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      font-size: 20px;
+      font-weight: bold;
+      transition: transform 0.4s ease, top 0.4s ease;
+    }
+    .leaderboard-item:nth-child(1) {
+      border-left-color: #ffd700;
+      background-color: #fffdf0;
+    }
+    .leaderboard-item:nth-child(2) {
+      border-left-color: #c0c0c0;
+    }
+    .leaderboard-item:nth-child(3) {
+      border-left-color: #cd7f32;
+    }
+    .rank {
+      width: 40px;
+      color: #666;
+    }
+    .team-name {
+      flex-grow: 1;
+    }
+    .score {
+      color: #007bff;
+      font-size: 24px;
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <button onclick="showPage('admin')">Halaman Input Skor</button>
+    <button onclick="showPage('display')">Papan Skor Real-time</button>
+  </nav>
+
+  <!-- Halaman Input Skor (Admin) -->
+  <div id="admin" class="page active">
+    <h2>Panel Kontrol Juri</h2>
+    <div id="admin-list">Memuat data tim...</div>
+  </div>
+
+  <!-- Halaman Display Real-time -->
+  <div id="display" class="page">
+    <h2>Papan Peringkat Real-Time</h2>
+    <div id="leaderboard-list" class="leaderboard">Memuat peringkat...</div>
+  </div>
+
+  <script>
+    // GANTI DENGAN URL APPS SCRIPT ANDA
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxSOd6eXekr_-Qb0qgSJsM6AK_TT2fUfP-1t4cgJK_fmD8AesfnmVRA8JVBYYVcngbx/exec";
+
+    function showPage(pageId) {
+      document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+      if (pageId === 'display') {
+        fetchScores();
+      }
+    }
+
+    // Mengambil data skor dari Google Sheets
+    async function fetchScores() {
+      try {
+        const response = await fetch(SCRIPT_URL);
+        const data = await response.json();
+        
+        renderAdmin(data);
+        renderLeaderboard(data);
+      } catch (error) {
+        console.error("Gagal mengambil data:", error);
+      }
+    }
+
+    // Render kontrol admin
+    function renderAdmin(data) {
+      const container = document.getElementById('admin-list');
+      container.innerHTML = '';
+      
+      data.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'admin-card';
+        card.innerHTML = `
+          <span><strong>${item.teamName}</strong> (Skor: ${item.score})</span>
+          <div>
+            <button class="btn-score btn-plus" onclick="updateScore('${item.teamName}', 100)">+100</button>
+            <button class="btn-score btn-plus" onclick="updateScore('${item.teamName}', 50)">+50</button>
+            <button class="btn-score btn-minus" onclick="updateScore('${item.teamName}', -50)">-50</button>
+            <button class="btn-score btn-minus" onclick="updateScore('${item.teamName}', -100)">-100</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Render papan peringkat real-time
+    function renderLeaderboard(data) {
+      const container = document.getElementById('leaderboard-list');
+      container.innerHTML = '';
+
+      data.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = 'leaderboard-item';
+        row.innerHTML = `
+          <span class="rank">#${index + 1}</span>
+          <span class="team-name">${item.teamName}</span>
+          <span class="score">${item.score}</span>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    // Mengirim perubahan skor ke Google Apps Script
+    async function updateScore(teamName, points) {
+      try {
+        await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'updateScore',
+            teamName: teamName,
+            points: points
+          })
+        });
+        fetchScores(); // Perbarui tampilan setelah update
+      } catch (error) {
+        console.error("Gagal memperbarui skor:", error);
+      }
+    }
+
+    // Panggil data awal & jalankan pembaruan otomatis setiap 3 detik
+    fetchScores();
+    setInterval(fetchScores, 3000);
+  </script>
+</body>
+</html>
